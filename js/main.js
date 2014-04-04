@@ -1,5 +1,52 @@
 // Go Fish!~
 
+function Players() {
+    var numPlayers = getNumOfPlayers();
+    this.players[] = makePlayers(numPlayers);
+    this.getPlayer = function(name) {
+        var index = this.players.indexOf(name);
+        return this.players[index];
+    }
+    //from this.players[]
+    this.doesExist = function(name) {
+        if(this.players.indexOf(name) > -1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    this.getRandomPlayer() {
+        var bottom = 0;
+        var top = numPlayers - 1
+        return players[randBetween(bottom, top)].name;
+    }
+
+    function getNumOfPlayers() {
+        var numPlayers = parseInt(prompt("How many players are there?"));
+        while(numPlayers > 6 && numPlayers < 2) {
+            numPlayers = parseInt(prompt("How many players are there? Please no fewer than 2 or greater than 6!"));
+        }
+        return numPlayers;
+    }
+
+    function makePlayers(numOfPlayers) {
+        var players = [];
+        var name;
+        var type;
+        for(var i = 0; i < numOfPlayers; i++) {
+            while(players.indexOf(name) !== -1 || name === "" || name.length > 8 || name === undefined) {
+                name = prompt("What is your name?");
+            }
+            while(type !== "HUMAN" && type !== "COMPUTER") {
+                type = prompt("What are you? Human or Computer?");
+                type.toUpperCase;
+            }
+            players.push(new player(name, type));
+        }
+        return players;
+    }
+}
+
 function Deck() {
     this.cards = [];
     var suits = ["C", "D", "H", "S"];
@@ -17,14 +64,14 @@ function Deck() {
             this.cards.splice(index, 1);
         }
         this.cards = newArr;
-    }
+    };
     this.draw = function() {
         if(this.cards.length > 0) {
-            return this.cards.pop();
+            return [this.cards.pop()];
         } else {
             return -1;
         }
-    }
+    };
 }
 
 function Card(suit, value) {
@@ -56,8 +103,12 @@ function Book(value) {
 function Player(name, playerType) {
     this.name = name;
     this.playerType = playerType;
-    this.hand = [];
     this.books = [];
+    this.hand = [];
+    for(var k = 0; k < 8; k++) {
+        this.addCards(deck.draw());
+    }
+    this.sortHand();
 
     function isValidRank(card) {
         if(card === "A" || card === "J" || card === "Q" || card === "K" || (card >= 2 && card <= 10)) {
@@ -69,23 +120,36 @@ function Player(name, playerType) {
     this.chooseCard = function() {
         var opponent;
         var card;
-        while(players.doesExist(opponent) === false && this.name === opponent) {
-            opponent = prompt("Which player would you like to ask?");
-        }
-        while(isValidRank(card) === false && this.hasCard(card) === false) {
-            card = prompt("What card are you looking for?");
-            card.toUpperCase();
+        if(this.playerType === "HUMAN") {
+            while(players.doesExist(opponent) === false && this.name === opponent) {
+                opponent = prompt("Which player would you like to ask?");
+            }
+            while(isValidRank(card) === false && this.hasCard(card) === false) {
+                card = prompt("What card are you looking for?");
+                card.toUpperCase();
+            }
+        } else {
+            opponent = players.getRandomPlayer();
+            while(opponent.name === this.name) {
+                opponent = players.getRandomPlayer();
+            }
+            var cardIndex = randBetween(0, this.hand.length - 1)
+            card = this.hand[cardIndex].rank;
         }
         opponent = players.getPlayer(opponent);
         var fishCards = opponent.hasCard(card);
+        var cardsInTransit;
         if(fishCards) {
-            var cardsInTransit = opponent.getCards(fishCards);
+            cardsInTransit = opponent.getCards(fishCards);
         } else {
-            var cardsInTransit = deck.draw();
+            cardsInTransit = deck.draw();
         }
-        this.addCards(cardsInTransit);
+        if(cardsInTransit !== -1) {
+            this.addCards(cardsInTransit);
+        }
     };
     this.hasCard = function(query) {
+        query = rankToValue(query);
         var numCards;
         var startPos;
         var top = this.hand.length - 1;
@@ -93,7 +157,7 @@ function Player(name, playerType) {
         var range = top - bottom + 1;
         while(range >= 1) {
             var pos = Math.floor(bottom + range / 2);
-            var card = this.hand[pos];
+            var card = this.hand[pos].value;
             if(card < query) {
                 bottom = pos + 1;
                 range = top - bottom + 1;
@@ -104,12 +168,16 @@ function Player(name, playerType) {
                 numCards = 1;
                 startPos = pos;
                 for(var i = 1; i <= 2; i++) {
-                    if(this.hand[pos + i] === query) {
-                        numCards++;
+                    if(this.hand[pos + i] !== undefined) {
+                        if(this.hand[pos + i].value === query) {
+                            numCards++;
+                        }
                     }
-                    if(this.hand[pos - i] === query) {
-                        numCards++;
-                        startPos = pos - i;
+                    if(this.hand[pos - i] !== undefined) {
+                        if(this.hand[pos - i].value === query) {
+                            numCards++;
+                            startPos = pos - i;
+                        }
                     }
                 }
                 var fishCards = {};
@@ -142,6 +210,42 @@ function Player(name, playerType) {
         }
         console.log(x);
     };
+    this.addCards = function(cardArr) {
+        for(i = 0; i < cardArr.length; i++) {
+            this.hand.push(cardArr[i]);
+        }
+    };
+    this.getCards = function(cardInfo) {
+        var cardArray = [];
+        cardArray = this.hand.splice(cardInfo.startPos, cardInfo.numCards);
+        return cardArray;
+    };
+    this.removeBooks = function() {
+        for(var j = 0; j < this.hand.length; j++) {
+            if(this.hand[j] === this.hand[j + 3]) {
+                this.books.push(new Book(this.hand[j].value));
+                this.hand.splice(j, 4);
+            }
+        }
+    };
+    this.sortHand = function() {
+        for(var i = 1; i < this.hand.length; i++) {
+            var j = i;
+            while(this.hand[j] < this.hand[j - 1]) {
+                var temp = this.hand[j - 1];
+                this.hand[j - 1] = this.hand[j];
+                this.hand[j] = temp;
+                j--;
+            }
+        }
+    }
+    this.getScore = function() {
+        var scoreTotal = 0;
+        for(var i = 0; i < this.books.length; i++) {
+            scoreTotal = this.books[i].score + scoreTotal;
+        }
+        return scoreTotal;
+    }
 }
 
 function randBetween(min, max) {
@@ -150,10 +254,24 @@ function randBetween(min, max) {
 }
 
 function rankToValue(rank) { //Mike
-    
-    
-    
-    
+    var value;
+    switch(rank) {
+        case "A":
+            value = 1;
+            break;
+        case "K":
+            value = 13;
+            break;
+        case "Q":
+            value = 12;
+            break;
+        case "J":
+            value = 11;
+            break;
+        default:
+            value = parseInt(rank, 10);
+            break;
+    }
     return value; // int
 }
 
@@ -175,6 +293,6 @@ function valueToRank(value) {
         default:
             rank = value;
     }
-    return rank; 
+    return rank;
 }
 var deck = new Deck();
