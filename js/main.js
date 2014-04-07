@@ -1,8 +1,8 @@
 // Go Fish!~
 
 function Players() {
-    var numPlayers = getNumOfPlayers();
-    this.players[] = makePlayers(numPlayers);
+    this.numPlayers = getNumOfPlayers();
+    this.players = makePlayers(this.numPlayers);
     this.getPlayer = function(name) {
         var index = this.players.indexOf(name);
         return this.players[index];
@@ -15,7 +15,7 @@ function Players() {
             return false;
         }
     }
-    this.getRandomPlayer() {
+    this.getRandomPlayer = function() {
         var bottom = 0;
         var top = numPlayers - 1
         return players[randBetween(bottom, top)].name;
@@ -31,17 +31,19 @@ function Players() {
 
     function makePlayers(numOfPlayers) {
         var players = [];
-        var name;
+        var name = "";
         var type;
         for(var i = 0; i < numOfPlayers; i++) {
-            while(players.indexOf(name) !== -1 || name === "" || name.length > 8 || name === undefined) {
-                name = prompt("What is your name?");
+            name = "";
+            type = "";
+            while(players.indexOf(name) !== -1 || name === "" || name.length > 12 || name === undefined) {
+                name = prompt("Player "+(i+1)+", what is your name?");
             }
-            while(type !== "HUMAN" && type !== "COMPUTER") {
+            while(type !== "human".toUpperCase() && type !== "computer".toUpperCase()) {
                 type = prompt("What are you? Human or Computer?");
-                type.toUpperCase;
+                type = type.toUpperCase();
             }
-            players.push(new player(name, type));
+            players.push(new Player(name, type));
         }
         return players;
     }
@@ -72,6 +74,7 @@ function Deck() {
             return -1;
         }
     };
+    this.shuffle();
 }
 
 function Card(suit, value) {
@@ -105,10 +108,6 @@ function Player(name, playerType) {
     this.playerType = playerType;
     this.books = [];
     this.hand = [];
-    for(var k = 0; k < 8; k++) {
-        this.addCards(deck.draw());
-    }
-    this.sortHand();
 
     function isValidRank(card) {
         if(card === "A" || card === "J" || card === "Q" || card === "K" || (card >= 2 && card <= 10)) {
@@ -121,14 +120,16 @@ function Player(name, playerType) {
         var opponent;
         var card;
         if(this.playerType === "HUMAN") {
-            while(players.doesExist(opponent) === false && this.name === opponent) {
+            alert("Got here");
+            while(players.doesExist(opponent) === false && this.name === opponent) {//Mike fix this
                 opponent = prompt("Which player would you like to ask?");
             }
-            while(isValidRank(card) === false && this.hasCard(card) === false) {
+            while(isValidRank(card) === false && this.hasCard(card) === false) {//Tomas fix this
                 card = prompt("What card are you looking for?");
                 card.toUpperCase();
             }
         } else {
+            alert("Got here");
             opponent = players.getRandomPlayer();
             while(opponent.name === this.name) {
                 opponent = players.getRandomPlayer();
@@ -231,11 +232,14 @@ function Player(name, playerType) {
     this.sortHand = function() {
         for(var i = 1; i < this.hand.length; i++) {
             var j = i;
-            while(this.hand[j] < this.hand[j - 1]) {
+            while(this.hand[j].value < this.hand[j - 1].value) {
                 var temp = this.hand[j - 1];
                 this.hand[j - 1] = this.hand[j];
                 this.hand[j] = temp;
                 j--;
+                if(j===0){
+                    break;
+                }
             }
         }
     }
@@ -246,6 +250,11 @@ function Player(name, playerType) {
         }
         return scoreTotal;
     }
+    
+    for(var k = 0; k < 8; k++) {
+        this.addCards(deck.draw());
+    }
+    this.sortHand();
 }
 
 function randBetween(min, max) {
@@ -296,3 +305,14 @@ function valueToRank(value) {
     return rank;
 }
 var deck = new Deck();
+var players = new Players();
+var gameOn = true;
+while(gameOn){
+    for(var i=0;i<players.numPlayers;i++){
+        players.players[i].printHand();
+        players.players[i].chooseCard();
+        players.players[i].removeBooks();
+        players.players[i].sortHand();
+    }
+    gameOn = confirm("Keep playing?");
+}
